@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-16T12:30:00Z",
+  "title": "Design System: Movie Arena",
+  "extensions": {
+    "colorMeta": {
+      "canvas": { "role": "neutral", "displayName": "Night Canvas", "canonical": "#09090b", "tonalRamp": ["oklch(15% 0.005 286)", "oklch(27% 0.005 286)", "oklch(38% 0.005 286)", "oklch(50% 0.005 286)", "oklch(61% 0.005 286)", "oklch(72% 0.005 286)", "oklch(84% 0.005 286)", "oklch(95% 0.005 286)"] },
+      "bar": { "role": "neutral", "displayName": "Bar Black", "canonical": "#0e0e11", "tonalRamp": ["oklch(15% 0.006 286)", "oklch(27% 0.006 286)", "oklch(38% 0.006 286)", "oklch(50% 0.006 286)", "oklch(61% 0.006 286)", "oklch(72% 0.006 286)", "oklch(84% 0.006 286)", "oklch(95% 0.006 286)"] },
+      "raised": { "role": "neutral", "displayName": "Raised", "canonical": "#16161a" },
+      "raised-2": { "role": "neutral", "displayName": "Raised Two", "canonical": "#1d1d22" },
+      "tile": { "role": "neutral", "displayName": "Tile Base", "canonical": "#121216" },
+      "line": { "role": "neutral", "displayName": "Hairline", "canonical": "rgb(255 255 255 / 0.08)" },
+      "line-strong": { "role": "neutral", "displayName": "Strong Hairline", "canonical": "rgb(255 255 255 / 0.14)" },
+      "fill-1": { "role": "neutral", "displayName": "Fill One", "canonical": "rgb(255 255 255 / 0.06)" },
+      "fill-2": { "role": "neutral", "displayName": "Fill Two", "canonical": "rgb(255 255 255 / 0.1)" },
+      "fg": { "role": "neutral", "displayName": "Paper White", "canonical": "#f5f5f7" },
+      "fg-2": { "role": "neutral", "displayName": "Dim Text", "canonical": "rgb(235 235 245 / 0.64)" },
+      "fg-3": { "role": "neutral", "displayName": "Faint Text", "canonical": "rgb(235 235 245 / 0.5)" },
+      "on-white": { "role": "primary", "displayName": "On-White Ink", "canonical": "#0a0a0c" },
+      "marquee-white": { "role": "primary", "displayName": "Marquee White", "canonical": "#ffffff", "tonalRamp": ["oklch(15% 0 0)", "oklch(27% 0 0)", "oklch(38% 0 0)", "oklch(50% 0 0)", "oklch(61% 0 0)", "oklch(72% 0 0)", "oklch(84% 0 0)", "oklch(95% 0 0)"] },
+      "marquee-white-hover": { "role": "primary", "displayName": "Pressed Marquee", "canonical": "#e8e8ed" },
+      "shield": { "role": "tertiary", "displayName": "Shield Green", "canonical": "#34d399", "tonalRamp": ["oklch(15% 0.04 163)", "oklch(27% 0.07 163)", "oklch(38% 0.1 163)", "oklch(50% 0.12 163)", "oklch(61% 0.14 163)", "oklch(72% 0.15 163)", "oklch(84% 0.11 163)", "oklch(95% 0.04 163)"] },
+      "heart": { "role": "tertiary", "displayName": "Heart Red", "canonical": "#ff375f", "tonalRamp": ["oklch(15% 0.05 14)", "oklch(27% 0.1 14)", "oklch(38% 0.15 14)", "oklch(50% 0.19 14)", "oklch(61% 0.22 14)", "oklch(72% 0.17 14)", "oklch(84% 0.09 14)", "oklch(95% 0.03 14)"] },
+      "danger": { "role": "tertiary", "displayName": "Danger Coral", "canonical": "#ff6b6b", "tonalRamp": ["oklch(15% 0.04 22)", "oklch(27% 0.08 22)", "oklch(38% 0.12 22)", "oklch(50% 0.15 22)", "oklch(61% 0.17 22)", "oklch(72% 0.16 22)", "oklch(84% 0.09 22)", "oklch(95% 0.03 22)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Billboard title and the giant drifting wordmark. Axes are picked per channel by the wordmark hash." },
+      "headline": { "displayName": "Headline", "purpose": "Page titles such as search results and My Links." },
+      "title": { "displayName": "Title", "purpose": "Row titles and dialog titles." },
+      "body": { "displayName": "Body", "purpose": "Default text, summaries, page subtitles." },
+      "label": { "displayName": "Label", "purpose": "Buttons, tabs, player bar text." },
+      "caption": { "displayName": "Caption", "purpose": "Tile summaries, hosts, hints, group labels, counts." }
+    },
+    "shadows": [
+      { "name": "shadow-tile", "value": "0 2px 6px rgb(0 0 0 / 0.35), 0 8px 24px rgb(0 0 0 / 0.25)", "purpose": "Channel tiles at rest." },
+      { "name": "shadow-lift", "value": "0 18px 40px rgb(0 0 0 / 0.55), 0 6px 14px rgb(0 0 0 / 0.4)", "purpose": "Tile under hover or focus, paired with a 22% white inset ring." },
+      { "name": "shadow-pop", "value": "0 24px 64px rgb(0 0 0 / 0.6), 0 4px 16px rgb(0 0 0 / 0.4)", "purpose": "Billboard, dialogs, toast." },
+      { "name": "hairline", "value": "inset 0 0 0 1px rgb(255 255 255 / 0.08)", "purpose": "Default edge for every surface and control." },
+      { "name": "focus-ring", "value": "outline: 2px solid #fff; outline-offset: 2px", "purpose": "Keyboard focus on every focusable element. Tiles use a 3px white box-shadow ring instead." },
+      { "name": "glass", "value": "backdrop-filter: blur(12px) saturate(1.4); background: rgb(10 10 12 / 0.45)", "purpose": "Chips and buttons that float over lit art." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default easing for every state change and entrance." },
+      { "name": "ease-in-out", "value": "cubic-bezier(0.65, 0, 0.35, 1)", "purpose": "Looping motion: billboard drift and the loading sweep." },
+      { "name": "control", "value": "140ms to 180ms", "purpose": "Hover and color changes on controls." },
+      { "name": "tile", "value": "420ms", "purpose": "Tile scale, tilt and shadow." },
+      { "name": "entrance", "value": "200ms to 360ms", "purpose": "Scrim, dialog and toast entrances." },
+      { "name": "billboard-dwell", "value": "8000ms", "purpose": "Time per billboard pick, shown by the filling dot." }
+    ],
+    "breakpoints": [
+      { "name": "compact-tabs", "value": "1080px" },
+      { "name": "player-compact", "value": "1100px" },
+      { "name": "bar-labels", "value": "1240px" },
+      { "name": "brand-name", "value": "1440px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Stream Capsule",
+      "kind": "button",
+      "refersTo": "capsule-solid",
+      "description": "The billboard's main action. Solid white capsule.",
+      "html": "<button class=\"ds-capsule\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><polygon points=\"6 3 20 12 6 21 6 3\"/></svg>Stream now</button>",
+      "css": ".ds-capsule { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 22px; border: 0; border-radius: 999px; background: #fff; color: #0a0a0c; font: 600 14px/1 \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; cursor: pointer; transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-capsule:hover { background: #e8e8ed; } .ds-capsule:active { transform: scale(0.97); } .ds-capsule:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Frost Capsule",
+      "kind": "button",
+      "refersTo": "capsule-frost",
+      "description": "Secondary billboard action, frosted glass over lit art.",
+      "html": "<div style=\"padding:24px;background:radial-gradient(120% 90% at 12% 0%, #6366f188, transparent 62%), #121216\"><button class=\"ds-frost\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z\"/></svg>Add to favorites</button></div>",
+      "css": ".ds-frost { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 22px; border: 0; border-radius: 999px; color: #fff; background: rgb(255 255 255 / 0.12); backdrop-filter: blur(16px) saturate(1.4); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16); font: 500 14px/1 \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; cursor: pointer; transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-frost:hover { background: rgb(255 255 255 / 0.2); } .ds-frost:active { transform: scale(0.97); } .ds-frost:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Chrome-level primary action such as Add link or Done.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" aria-hidden=\"true\"><path d=\"M5 12h14M12 5v14\"/></svg>Add link</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border: 0; border-radius: 8px; background: #fff; color: #0a0a0c; font: 600 13px/1 \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; cursor: pointer; transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1), background-color 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:hover { background: #e8e8ed; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action on translucent fill with a hairline.",
+      "html": "<button class=\"ds-btn-ghost\">Restore defaults</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border: 0; border-radius: 8px; color: #f5f5f7; background: rgb(255 255 255 / 0.06); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); font: 500 13px/1 \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; cursor: pointer; transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-ghost:hover { background: rgb(255 255 255 / 0.1); } .ds-btn-ghost:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Shield Pill",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Ad-Shield entry point with a live blocked count.",
+      "html": "<button class=\"ds-pill\"><svg class=\"ds-shield\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"/><path d=\"m9 12 2 2 4-4\"/></svg>Ad-Shield <span class=\"ds-count\">128</span></button>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; color: #f5f5f7; background: rgb(255 255 255 / 0.06); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); font: 500 13px/1 \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; cursor: pointer; transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-pill:hover { background: rgb(255 255 255 / 0.1); } .ds-pill:focus-visible { outline: 2px solid #fff; outline-offset: 2px; } .ds-shield { color: #34d399; } .ds-count { font-weight: 600; font-variant-numeric: tabular-nums; color: rgb(235 235 245 / 0.64); }"
+    },
+    {
+      "name": "Category Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Segmented track in the top bar; the selected tab is solid white.",
+      "html": "<nav class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">All</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Aggregators</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Dedicated</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Favorites</button></nav>",
+      "css": ".ds-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); } .ds-tab { height: 30px; padding: 0 13px; border: 0; border-radius: 7px; background: none; color: rgb(235 235 245 / 0.64); font: 500 13px/1 \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; cursor: pointer; white-space: nowrap; transition: color 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-tab:hover { color: #f5f5f7; background: rgb(255 255 255 / 0.06); } .ds-tab[aria-selected=\"true\"] { background: #fff; color: #0a0a0c; font-weight: 600; } .ds-tab:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "filter-chip",
+      "description": "Feature filter capsule; pressed turns solid white.",
+      "html": "<div style=\"display:flex;gap:6px\"><button class=\"ds-filter\" aria-pressed=\"true\">4K</button><button class=\"ds-filter\" aria-pressed=\"false\">Auto-next</button><button class=\"ds-filter\" aria-pressed=\"false\">Clean UI</button></div>",
+      "css": ".ds-filter { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 13px; border: 0; border-radius: 999px; color: rgb(235 235 245 / 0.64); background: rgb(255 255 255 / 0.06); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); font: 500 12.5px/1 \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; cursor: pointer; white-space: nowrap; transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1), color 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-filter:hover { color: #f5f5f7; background: rgb(255 255 255 / 0.1); } .ds-filter[aria-pressed=\"true\"] { background: #fff; color: #0a0a0c; font-weight: 600; box-shadow: none; } .ds-filter:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Fluent-style field with a white underline on focus.",
+      "html": "<label class=\"ds-field\"><span>Site URL</span><input class=\"ds-input\" placeholder=\"https://\" /></label>",
+      "css": ".ds-field { display: grid; gap: 6px; font: 600 12.5px/1.45 \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; color: rgb(235 235 245 / 0.64); } .ds-input { height: 36px; padding: 0 12px; border: 0; border-radius: 8px; outline: none; background: rgb(255 255 255 / 0.06); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14); color: #f5f5f7; font: 400 14px/1.45 \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; transition: box-shadow 140ms cubic-bezier(0.16, 1, 0.3, 1), background-color 140ms; } .ds-input::placeholder { color: rgb(235 235 245 / 0.5); } .ds-input:hover { background: rgb(255 255 255 / 0.08); } .ds-input:focus { background: rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14), inset 0 -2px 0 #fff; } .ds-input[aria-invalid=\"true\"] { box-shadow: inset 0 0 0 1px #ff6b6b; }"
+    },
+    {
+      "name": "Switch",
+      "kind": "custom",
+      "refersTo": "switch",
+      "description": "Fluent-style toggle; on is a solid white track with a dark knob.",
+      "html": "<div style=\"display:flex;gap:12px\"><button class=\"ds-switch\" role=\"switch\" aria-checked=\"true\" aria-label=\"On\"></button><button class=\"ds-switch\" role=\"switch\" aria-checked=\"false\" aria-label=\"Off\"></button></div>",
+      "css": ".ds-switch { position: relative; width: 40px; height: 20px; padding: 0; border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.55); cursor: pointer; transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-switch::after { content: \"\"; position: absolute; top: 4px; left: 4px; width: 12px; height: 12px; border-radius: 999px; background: rgb(255 255 255 / 0.8); transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), width 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms; } .ds-switch:active::after { width: 15px; } .ds-switch[aria-checked=\"true\"] { background: #fff; box-shadow: none; } .ds-switch[aria-checked=\"true\"]::after { background: #0a0a0c; transform: translateX(20px); } .ds-switch:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Channel Tile",
+      "kind": "card",
+      "refersTo": "channel-tile",
+      "description": "Signature unit: a 16:9 tile lit by the site's accent pair, with its hashed wordmark, rating chip and feature tags. Lifts on hover.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-tile\" style=\"--a:#6366f1;--b:#a855f7\"><div class=\"ds-lit\"></div><span class=\"ds-wordmark\" style=\"font-stretch:112%;font-weight:780;letter-spacing:-0.03em\">Movy</span><div class=\"ds-top\"><span class=\"ds-chip\"><svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z\"/></svg>4.9</span></div><div class=\"ds-bottom\"><span class=\"ds-chip ds-tag\">4K</span><span class=\"ds-chip ds-tag\">Auto-next</span></div></div><div class=\"ds-cap\"><div class=\"ds-cap-name\">Movy</div><div class=\"ds-cap-sub\">Premium quality streaming with 4K support.</div></div></article>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 10px; width: 248px; font-family: \"Segoe UI Variable Text\", \"Segoe UI\", system-ui, sans-serif; color: #f5f5f7; } .ds-tile { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; display: grid; place-items: center; box-shadow: 0 2px 6px rgb(0 0 0 / 0.35), 0 8px 24px rgb(0 0 0 / 0.25), inset 0 0 0 1px rgb(255 255 255 / 0.08); transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 420ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-card:hover .ds-tile { transform: perspective(900px) scale(1.045); box-shadow: 0 18px 40px rgb(0 0 0 / 0.55), 0 6px 14px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(255 255 255 / 0.22); } .ds-lit { position: absolute; inset: 0; background: radial-gradient(120% 90% at 12% 0%, color-mix(in oklab, var(--a) 46%, transparent) 0%, transparent 62%), radial-gradient(90% 80% at 100% 100%, color-mix(in oklab, var(--b) 36%, transparent) 0%, transparent 60%), linear-gradient(180deg, rgb(255 255 255 / 0.03), rgb(0 0 0 / 0.35)), #121216; } .ds-wordmark { position: relative; font-family: \"Mona Sans Variable\", \"Segoe UI Variable Display\", \"Segoe UI\", system-ui, sans-serif; font-size: 44px; line-height: 0.95; color: #fff; text-shadow: 0 2px 18px rgb(0 0 0 / 0.35); } .ds-top, .ds-bottom { position: absolute; left: 8px; right: 8px; display: flex; gap: 5px; } .ds-top { top: 8px; } .ds-bottom { bottom: 8px; } .ds-chip { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; background: rgb(10 10 12 / 0.45); backdrop-filter: blur(12px) saturate(1.4); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); font-variant-numeric: tabular-nums; } .ds-tag { height: 19px; padding: 0 6px; border-radius: 5px; font-size: 10.5px; color: rgb(255 255 255 / 0.92); } .ds-cap { padding: 0 2px; } .ds-cap-name { font-size: 13.5px; font-weight: 600; } .ds-cap-sub { font-size: 12px; color: rgb(235 235 245 / 0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Channel Guide",
+    "overview": "Movie Arena reads like a living-room TV guide seen in a dark room. A near-black canvas holds rows of lit channel tiles. Each streaming site is a channel with its own light and its own lettering, so the catalog looks like a lineup rather than a list of bookmarks. Controls stay quiet and native to Windows so the channels carry the color.\n\nDensity is medium. Rows scroll sideways, the billboard gives one pick the full width, and the player strips the chrome down to one slim bar so the video owns the window. Color lives almost entirely inside tiles. Everything outside a tile is neutral, white, or one of three functional signals.\n\nThe world rejects the generic bookmark grid of favicons and raw URLs. A site is never shown as a favicon plus a link; it gets a lit tile and a wordmark.",
+    "keyCharacteristics": [
+      "Night canvas (#09090b) with translucent white fills and hairlines for every surface step",
+      "White is the only action color; primaries are solid white with near-black text",
+      "Per-channel light pools built from each site's own accent pair",
+      "Mona Sans wordmarks whose width, weight and case vary per channel, Segoe UI Variable for every control",
+      "tvOS-style tile focus: tilt toward the pointer, sheen, lift shadow",
+      "Frosted glass only where controls float over lit art"
+    ],
+    "rules": [
+      { "name": "The White Voice Rule", "body": "The only action color is white. A primary control is solid white with On-White Ink; nothing else gets a brand fill.", "section": "colors" },
+      { "name": "The Borrowed Light Rule", "body": "Saturated color belongs to channels. It comes from the site's own accent pair and stays inside its tile, billboard or source mark. App chrome never uses a channel's color.", "section": "colors" },
+      { "name": "The One Signal Rule", "body": "Green means the shield, red means a favorite, coral means destroy. Never reuse a signal color for decoration or for a different meaning.", "section": "colors" },
+      { "name": "The Channel Lettering Rule", "body": "A site's wordmark is derived from a hash of its name: width from {78, 88, 100, 112, 122}%, weight from {620, 700, 780, 860}, case as-is, upper or lower. The same name renders the same everywhere. Never set a channel name in Mona Sans by hand with fixed axes; route it through the wordmark.", "section": "typography" },
+      { "name": "The System Controls Rule", "body": "Every control, label and paragraph uses the Segoe UI Variable stack. Mona Sans is reserved for channel wordmarks, page titles and the app name.", "section": "typography" },
+      { "name": "The Tabular Count Rule", "body": "Ratings, blocked counts, row counts and tallies use tabular numerals so live numbers do not jitter.", "section": "typography" },
+      { "name": "The Hairline Edge Rule", "body": "Edges are `inset 0 0 0 1px` white at 8% or 14%, never a solid gray border. Dividers inside panels are a 1px inset line on the top or left.", "section": "elevation" },
+      { "name": "The Lit From Inside Rule", "body": "Tiles glow from their own light pools and lift on focus. Depth comes from light and soft black shadow, never from a hard offset shadow.", "section": "elevation" },
+      { "name": "The Glass Over Light Rule", "body": "Backdrop blur (12px to 16px, saturate 1.4) is for chips, rating badges, favorite buttons, carousel arrows, row paddles and the frost capsule, all of which float over lit art. Flat chrome on the canvas stays opaque.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do give every site a lit tile and a hashed Mona Sans wordmark, including user-added links.",
+      "Do make the one primary action on a surface solid white (#ffffff) with On-White Ink (#0a0a0c).",
+      "Do draw edges as 1px inset white rings at 8% or 14%.",
+      "Do align every horizontal edge to the gutter, clamp(24px, 3.2vw, 48px).",
+      "Do use Segoe UI Variable for every control and Mona Sans only for wordmarks, page titles and the app name.",
+      "Do use tabular numerals for any number that updates live.",
+      "Do keep blur for controls that float over lit art.",
+      "Do honor reduced motion by removing tilt and animation."
+    ],
+    "donts": [
+      "Don't show a site as a favicon plus a URL in a bookmark grid.",
+      "Don't use a channel's accent color in app chrome, buttons or text.",
+      "Don't use Shield Green, Heart Red or Danger Coral for anything other than the shield, favorites and destructive actions.",
+      "Don't introduce a colored primary button; white is the action color.",
+      "Don't use solid gray borders or hard offset shadows.",
+      "Don't set a channel name in Mona Sans with fixed axes outside the wordmark logic."
+    ]
+  }
+}
