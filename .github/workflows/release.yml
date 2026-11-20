@@ -1,0 +1,114 @@
+name: Build and release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: --bundles nsis,msi
+          - os: macos-latest
+            args: --target universal-apple-darwin --bundles app,dmg
+          # 22.04 keeps the glibc floor low so the AppImage runs on older distros.
+          - os: ubuntu-22.04
+            args: --bundles appimage,deb,rpm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ startsWith(matrix.os, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.os }}
+
+      - name: Linux system libraries
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev libssl-dev rpm
+
+      - run: npm ci
+
+      - name: Rust tests
+        working-directory: src-tauri
+        run: cargo test --lib
+
+      - name: Build
+        run: npx tauri build ${{ matrix.args }}
+
+      # Stable names, so releases/latest/download/<name> links never break.
+      - name: Collect installers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir out
+          b=src-tauri/target/release/bundle
+          case "${{ runner.os }}" in
+            Windows)
+              cp $b/nsis/*.exe out/MovieArena-Windows-setup.exe
+              cp $b/msi/*.msi out/MovieArena-Windows.msi ;;
+            macOS)
+              cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg out/MovieArena-macOS.dmg ;;
+            Linux)
+              cp $b/appimage/*.AppImage out/MovieArena-Linux.AppImage
+              cp $b/deb/*.deb out/MovieArena-Linux.deb
+              cp $b/rpm/*.rpm out/MovieArena-Linux.rpm ;;
+          esac
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ runner.os }}
+          path: out/*
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Movie Arena ${{ github.ref_name }}
+          files: out/*
+          make_latest: true
+          body: |
+            Movie Arena for Windows, macOS and Linux.
+
+            | System | Download |
+            |---|---|
+            | Windows 10 and 11 | `MovieArena-Windows-setup.exe` (or the `.msi` for managed installs) |
+            | macOS 11 or later, Intel and Apple Silicon | `MovieArena-macOS.dmg` |
+            | Linux, any distro | `MovieArena-Linux.AppImage` |
+            | Ubuntu, Debian | `MovieArena-Linux.deb` |
+            | Fedora, openSUSE | `MovieArena-Linux.rpm` |
+
+            The apps are not code-signed yet, so the first launch needs one extra step:
+
+            - **Windows:** if SmartScreen warns, choose "More info", then "Run anyway".
+            - **macOS:** drag the app to Applications and open it. When macOS says it can't verify the developer, open System Settings > Privacy & Security and choose "Open Anyway".
+            - **Linux AppImage:** run `chmod +x MovieArena-Linux.AppImage`, then open it.
+
+            Network-level ad blocking runs on Windows. On macOS and Linux the shield still skips video ads, blocks popups and redirects, and hides ad boxes.

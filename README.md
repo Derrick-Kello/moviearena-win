@@ -10,7 +10,13 @@ npm run tauri dev        # development, works on macOS and Windows
 npm run tauri build      # installers for the OS you build on
 ```
 
-A Mac can't produce the Windows installer. Push a `v*` tag, or run the "Build Windows installer" workflow by hand in GitHub Actions. It uploads an NSIS `.exe` and an `.msi`. The installer bundles the WebView2 bootstrapper, so it also works on machines that don't have WebView2 yet.
+Push a `v*` tag to release. The "Build and release" workflow builds on Windows, macOS and Linux, then publishes one GitHub Release with every installer. Asset names have no version in them, so these links always point at the newest release:
+
+- Windows: https://github.com/Derrick-Kello/moviearena-win/releases/latest/download/MovieArena-Windows-setup.exe
+- macOS (Intel and Apple Silicon): https://github.com/Derrick-Kello/moviearena-win/releases/latest/download/MovieArena-macOS.dmg
+- Linux: https://github.com/Derrick-Kello/moviearena-win/releases/latest/download/MovieArena-Linux.AppImage (also `.deb` and `.rpm`)
+
+The Windows installer bundles the WebView2 bootstrapper. None of the builds are code-signed yet. The release notes explain the one-time step each OS asks for on first launch.
 
 ## How it is put together
 
