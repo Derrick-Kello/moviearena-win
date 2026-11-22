@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
-import { Plus, Search, ShieldCheck, X } from "lucide-react";
+import { ArrowDownToLine, Plus, Search, ShieldCheck, X } from "lucide-react";
+import type { UpdateState } from "../lib/updates";
 import appIcon from "../assets/app-icon.png";
 import { TABS, TAB_LABELS, type Tab } from "../lib/types";
 
@@ -12,12 +13,16 @@ interface Props {
   onQuery: (q: string) => void;
   onShield: () => void;
   onAdd: () => void;
+  downloading: number;
+  update: UpdateState;
+  onUpdate: () => void;
+  onUpdateFailed: () => void;
 }
 
 const isMac = typeof navigator !== "undefined" && /Mac/.test(navigator.platform);
 
 export const TopBar = forwardRef<HTMLInputElement, Props>(function TopBar(
-  { tab, query, blocked, bump, onTab, onQuery, onShield, onAdd },
+  { tab, query, blocked, bump, onTab, onQuery, onShield, onAdd, downloading, update, onUpdate, onUpdateFailed },
   searchRef,
 ) {
   const searching = query.trim().length > 0;
@@ -38,6 +43,11 @@ export const TopBar = forwardRef<HTMLInputElement, Props>(function TopBar(
             onClick={() => onTab(t)}
           >
             {TAB_LABELS[t]}
+            {t === "downloads" && downloading > 0 && (
+              <span className="tab-badge" aria-label={`${downloading} saving`}>
+                {downloading}
+              </span>
+            )}
           </button>
         ))}
       </nav>
@@ -71,6 +81,22 @@ export const TopBar = forwardRef<HTMLInputElement, Props>(function TopBar(
           )}
         </label>
 
+        {update.kind === "available" && (
+          <button className="pill-btn update" onClick={onUpdate} title={`Install Movie Arena ${update.version} and restart`}>
+            <ArrowDownToLine size={14} aria-hidden /> Update to {update.version}
+          </button>
+        )}
+        {update.kind === "installing" && (
+          <span className="pill-btn update" role="status">
+            <span className="spinner" aria-hidden />
+            {update.progress === null ? "Updating" : `Updating ${Math.round(update.progress * 100)}%`}
+          </span>
+        )}
+        {update.kind === "failed" && (
+          <button className="pill-btn" onClick={onUpdateFailed} title={update.message}>
+            Get {update.version} from the website
+          </button>
+        )}
         <button className="pill-btn" onClick={onShield} title="Ad-Shield settings and activity">
           <ShieldCheck size={15} className="shield-icon" aria-hidden />
           <span className="bar-label">Ad-Shield</span>

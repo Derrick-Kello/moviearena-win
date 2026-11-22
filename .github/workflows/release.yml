@@ -53,22 +53,31 @@ jobs:
 
       - name: Build
         run: npx tauri build ${{ matrix.args }}
+        env:
+          # Signs the update bundles; installed apps reject unsigned updates.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       # Stable names, so releases/latest/download/<name> links never break.
       - name: Collect installers
         shell: bash
         run: |
           set -euo pipefail
-          mkdir out
+          mkdir -p out sig
           b=src-tauri/target/release/bundle
           case "${{ runner.os }}" in
             Windows)
               cp $b/nsis/*.exe out/MovieArena-Windows-setup.exe
+              cp $b/nsis/*.exe.sig sig/windows-x86_64.sig
               cp $b/msi/*.msi out/MovieArena-Windows.msi ;;
             macOS)
-              cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg out/MovieArena-macOS.dmg ;;
+              m=src-tauri/target/universal-apple-darwin/release/bundle
+              cp $m/dmg/*.dmg out/MovieArena-macOS.dmg
+              cp $m/macos/*.app.tar.gz out/MovieArena-macOS.app.tar.gz
+              cp $m/macos/*.app.tar.gz.sig sig/darwin.sig ;;
             Linux)
               cp $b/appimage/*.AppImage out/MovieArena-Linux.AppImage
+              cp $b/appimage/*.AppImage.sig sig/linux-x86_64.sig
               cp $b/deb/*.deb out/MovieArena-Linux.deb
               cp $b/rpm/*.rpm out/MovieArena-Linux.rpm ;;
           esac
@@ -79,6 +88,11 @@ jobs:
           name: installers-${{ runner.os }}
           path: out/*
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signatures-${{ runner.os }}
+          path: sig/*
+
   release:
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
@@ -86,8 +100,39 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: installers-*
           path: out
           merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: signatures-*
+          path: sig
+          merge-multiple: true
+
+      # The manifest installed apps poll for updates.
+      - name: Write latest.json
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          base="https://github.com/$REPO/releases/download/$TAG"
+          jq -n \
+            --arg v "${TAG#v}" \
+            --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg notes "See https://github.com/$REPO/releases/tag/$TAG" \
+            --arg win "$(cat sig/windows-x86_64.sig)" \
+            --arg mac "$(cat sig/darwin.sig)" \
+            --arg lin "$(cat sig/linux-x86_64.sig)" \
+            --arg base "$base" \
+            '{version: $v, notes: $notes, pub_date: $date, platforms: {
+              "windows-x86_64": {signature: $win, url: "\($base)/MovieArena-Windows-setup.exe"},
+              "darwin-aarch64": {signature: $mac, url: "\($base)/MovieArena-macOS.app.tar.gz"},
+              "darwin-x86_64": {signature: $mac, url: "\($base)/MovieArena-macOS.app.tar.gz"},
+              "linux-x86_64": {signature: $lin, url: "\($base)/MovieArena-Linux.AppImage"}
+            }}' > out/latest.json
+          cat out/latest.json
 
       - uses: softprops/action-gh-release@v2
         with:

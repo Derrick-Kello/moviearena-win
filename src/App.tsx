@@ -7,6 +7,11 @@ import { ChannelCard, type CardHandlers } from "./components/ChannelCard";
 import { Player } from "./components/Player";
 import { ShieldDialog } from "./components/ShieldDialog";
 import { SiteDialog } from "./components/SiteDialog";
+import { Downloads, DISCLAIMER } from "./components/Downloads";
+import { LocalPlayer } from "./components/LocalPlayer";
+import { Dialog } from "./components/Dialog";
+import { useLibrary, titleOf, type LibraryItem } from "./lib/library";
+import { useUpdates, RELEASES_URL } from "./lib/updates";
 import { openExternal, popupMenu } from "./lib/native";
 import { FEATURE_ICONS } from "./lib/icons";
 import { hostOf, normalizeUrl, useShield, useSites, type SiteDraft } from "./lib/store";
@@ -23,7 +28,15 @@ import {
   type Tab,
 } from "./lib/types";
 
-type DialogState = { kind: "shield" } | { kind: "add"; url?: string } | { kind: "edit"; site: Site } | null;
+type DialogState =
+  | { kind: "shield" }
+  | { kind: "add"; url?: string }
+  | { kind: "edit"; site: Site }
+  | { kind: "deleteVideo"; item: LibraryItem }
+  | { kind: "disclaimer" }
+  | null;
+
+const DISCLAIMER_KEY = "movie-arena.disclaimer.v1";
 type Toast = { text: string; action?: { label: string; run: () => void } } | null;
 
 export default function App() {
@@ -33,7 +46,12 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [feature, setFeature] = useState<Feature | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<DialogState>(null);
+  const [dialog, setDialog] = useState<DialogState>(() =>
+    localStorage.getItem(DISCLAIMER_KEY) ? null : { kind: "disclaimer" },
+  );
+  const [local, setLocal] = useState<LibraryItem | null>(null);
+  const lib = useLibrary();
+  const updates = useUpdates();
   const [toast, setToast] = useState<Toast>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -55,6 +73,43 @@ export default function App() {
     const t = window.setTimeout(() => setToast(null), 6000);
     return () => window.clearTimeout(t);
   }, [toast]);
+
+  // Announce finished and failed downloads (the player shows its own notice).
+  const announced = useRef(new Set<string>());
+  useEffect(() => {
+    const d = lib.downloads[0];
+    if (!d || d.state === "saving") return;
+    const key = `${d.path}:${d.state}`;
+    if (announced.current.has(key)) return;
+    announced.current.add(key);
+    if (activeId) return;
+    setToast(
+      d.state === "done"
+        ? { text: `${titleOf(d.name)} is ready to watch offline`, action: { label: "Watch", run: () => openDownload(d.path) } }
+        : { text: `The download of ${titleOf(d.name)} stopped` },
+    );
+  }, [lib.downloads]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openDownload = (path: string) => {
+    const item = lib.items?.find((i) => i.path === path) ?? {
+      name: path.split(/[\\/]/).pop() ?? path,
+      path,
+      size: 0,
+      modified: Date.now(),
+      kind: lib.downloads.find((d) => d.path === path)?.kind ?? ("file" as const),
+    };
+    setActiveId(null);
+    setTab("downloads");
+    setQuery("");
+    setLocal(item);
+  };
+
+  const closeDialog = useCallback(() => {
+    setDialog((d) => {
+      if (d?.kind === "disclaimer") localStorage.setItem(DISCLAIMER_KEY, "1");
+      return null;
+    });
+  }, []);
 
   const launch = useCallback(
     (site: Site) => {
@@ -110,7 +165,7 @@ export default function App() {
   // Global shortcuts for the browse view.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (active || dialog) return;
+      if (active || local || dialog) return;
       const mod = e.ctrlKey || e.metaKey;
       if (mod && (e.key.toLowerCase() === "k" || e.key.toLowerCase() === "f")) {
         e.preventDefault();
@@ -123,7 +178,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, dialog]);
+  }, [active, local, dialog]);
 
   const goTab = (t: Tab) => {
     setTab(t);
@@ -307,6 +362,16 @@ export default function App() {
         )}
       </>
     );
+  } else if (tab === "downloads") {
+    body = (
+      <Downloads
+        items={lib.items}
+        downloads={lib.downloads}
+        onPlay={setLocal}
+        onDelete={(item) => setDialog({ kind: "deleteVideo", item })}
+        onDismiss={lib.dismiss}
+      />
+    );
   } else {
     const cat = tab as Category;
     const list = byFeature(sites.filter((s) => s.category === cat));
@@ -353,8 +418,17 @@ export default function App() {
         }}
         onShield={() => setDialog({ kind: "shield" })}
         onAdd={() => setDialog({ kind: "add" })}
+        downloading={lib.downloads.filter((d) => d.state === "saving").length}
+        update={updates.state}
+        onUpdate={updates.install}
+        onUpdateFailed={() => openExternal(RELEASES_URL)}
       />
-      <main className="scroller" ref={scroller} aria-hidden={Boolean(active)} inert={active ? true : undefined}>
+      <main
+        className="scroller"
+        ref={scroller}
+        aria-hidden={Boolean(active || local)}
+        inert={active || local ? true : undefined}
+      >
         {body}
       </main>
 
@@ -369,7 +443,64 @@ export default function App() {
           onSwitch={launch}
           onToggleFavorite={(s) => store.toggleFavorite(s.id)}
           onShield={() => setDialog({ kind: "shield" })}
+          downloads={lib.downloads}
+          onOpenDownload={openDownload}
         />
+      )}
+
+      {local && (
+        <LocalPlayer
+          key={local.path}
+          item={local}
+          onClose={() => {
+            setLocal(null);
+            lib.refresh();
+          }}
+        />
+      )}
+
+      {dialog?.kind === "disclaimer" && (
+        <Dialog
+          title="Before you start"
+          onClose={closeDialog}
+          footer={
+            <button className="primary-btn" onClick={closeDialog} data-autofocus style={{ marginLeft: "auto" }}>
+              I understand
+            </button>
+          }
+        >
+          <p className="dialog-copy">{DISCLAIMER}</p>
+        </Dialog>
+      )}
+
+      {dialog?.kind === "deleteVideo" && (
+        <Dialog
+          title={`Delete ${titleOf(dialog.item.name)}?`}
+          description="This removes the file from your computer. It can't be undone."
+          onClose={closeDialog}
+          footer={
+            <>
+              <button className="ghost-btn" onClick={closeDialog} data-autofocus style={{ marginLeft: "auto" }}>
+                Cancel
+              </button>
+              <button
+                className="ghost-btn danger armed"
+                onClick={() => {
+                  const item = dialog.item;
+                  closeDialog();
+                  lib
+                    .remove(item.path)
+                    .then(() => setToast({ text: `Deleted ${titleOf(item.name)}` }))
+                    .catch((e) => setToast({ text: `Couldn't delete the file: ${String(e)}` }));
+                }}
+              >
+                Delete file
+              </button>
+            </>
+          }
+        >
+          <span />
+        </Dialog>
       )}
 
       {dialog?.kind === "shield" && (
@@ -379,7 +510,7 @@ export default function App() {
           onChange={shield.change}
           onResetStats={shield.resetStats}
           onRestoreDefaults={store.resetToDefaults}
-          onClose={() => setDialog(null)}
+          onClose={closeDialog}
         />
       )}
       {(dialog?.kind === "add" || dialog?.kind === "edit") && (
@@ -389,7 +520,7 @@ export default function App() {
           initialUrl={dialog.kind === "add" ? dialog.url : undefined}
           onSave={saveDraft}
           onDelete={removeWithUndo}
-          onClose={() => setDialog(null)}
+          onClose={closeDialog}
         />
       )}
 

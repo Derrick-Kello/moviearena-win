@@ -1,4 +1,5 @@
 import {
+  Download,
   FastForward,
   Layers,
   MonitorPlay,
@@ -28,4 +29,5 @@ export const TAB_ICONS: Record<Tab, LucideIcon> = {
   dedicated: Zap,
   animeAndSpecial: Sparkles,
   custom: Star,
+  downloads: Download,
 };

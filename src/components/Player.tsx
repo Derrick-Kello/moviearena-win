@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  Check,
+  CircleAlert,
   ArrowLeft,
   ArrowRight,
   ChevronDown,
   ChevronLeft,
+  Download as SaveIcon,
   ExternalLink,
   FastForward,
   Heart,
@@ -17,6 +20,7 @@ import { Wordmark } from "./Wordmark";
 import { litVars } from "./ChannelCard";
 import { isNative, on, openExternal, player, popupMenu, type Bounds, type MenuEntry } from "../lib/native";
 import { hostOf } from "../lib/store";
+import { formatBytes, media, titleOf, type Download, type MediaItem, type MediaPayload } from "../lib/library";
 import { ALL_CATEGORIES, CATEGORY_TITLES, type Site } from "../lib/types";
 
 interface Props {
@@ -29,6 +33,8 @@ interface Props {
   onSwitch: (site: Site) => void;
   onToggleFavorite: (site: Site) => void;
   onShield: () => void;
+  downloads: Download[];
+  onOpenDownload: (path: string) => void;
 }
 
 interface Held {
@@ -42,13 +48,30 @@ function rectOf(el: HTMLElement): Bounds {
   return { x: r.left, y: r.top, width: r.width, height: r.height };
 }
 
-export function Player({ site, sites, blocked, bump, covered, onClose, onSwitch, onToggleFavorite, onShield }: Props) {
+export function Player({
+  site,
+  sites,
+  blocked,
+  bump,
+  covered,
+  onClose,
+  onSwitch,
+  onToggleFavorite,
+  onShield,
+  downloads,
+  onOpenDownload,
+}: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const sourceBtn = useRef<HTMLButtonElement>(null);
+  const saveBtn = useRef<HTMLButtonElement>(null);
   const [loading, setLoading] = useState(true);
   const [pageUrl, setPageUrl] = useState(site.url);
   const [history, setHistory] = useState({ canGoBack: !isNative || !/Windows/.test(navigator.userAgent), canGoForward: !isNative || !/Windows/.test(navigator.userAgent) });
   const [held, setHeld] = useState<Held | null>(null);
+  const [refused, setRefused] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [hiddenDownload, setHiddenDownload] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [immersive, setImmersive] = useState(false);
 
@@ -58,6 +81,7 @@ export function Player({ site, sites, blocked, bump, covered, onClose, onSwitch,
     setLoading(true);
     setPageUrl(site.url);
     setHeld(null);
+    setMediaItems([]);
     player.open(site.url, rectOf(stage.current)).catch((e) => console.error("Could not open player", e));
   }, [site.id, site.url]);
 
@@ -93,18 +117,36 @@ export function Player({ site, sites, blocked, bump, covered, onClose, onSwitch,
       on<{ loading: boolean; url: string }>("player:load", (p) => {
         setLoading(p.loading);
         setPageUrl(p.url);
+        if (p.loading) setMediaItems([]);
       }),
       on<{ canGoBack: boolean; canGoForward: boolean }>("player:history", setHistory),
       on<{ kind: string; url: string; host: string }>("player:blocked", (p) => {
         if (p.kind === "window") setHeld({ url: p.url, host: p.host });
+        // For downloads the backend sends the file name in `url`.
+        if (p.kind === "download") setRefused(p.url);
       }),
       on<{ active: boolean }>("player:fullscreen", (p) => {
         setImmersive(p.active);
         setFullscreen(p.active);
       }),
+      on<MediaPayload>("player:media", (p) => setMediaItems(p.items)),
     ];
     return () => offs.forEach((off) => off());
   }, []);
+
+  useEffect(() => {
+    if (!refused) return;
+    const t = window.setTimeout(() => setRefused(null), 8000);
+    return () => window.clearTimeout(t);
+  }, [refused]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const t = window.setTimeout(() => setNotice(null), 7000);
+    return () => window.clearTimeout(t);
+  }, [notice]);
+
+  const latest = downloads[0] && downloads[0].path !== hiddenDownload ? downloads[0] : null;
 
   // Let a held-window notice fade after a while.
   useEffect(() => {
@@ -158,6 +200,38 @@ export function Player({ site, sites, blocked, bump, covered, onClose, onSwitch,
       entries.push({ kind: "item", text: label, enabled: false, action: () => {} });
       g.forEach((s) => entries.push(entry(s)));
     });
+    await popupMenu(entries, r ? { x: r.left, y: r.bottom + 4 } : undefined);
+  };
+
+  const saveVideo = async () => {
+    if (!mediaItems.length) {
+      setNotice("No video found yet. Start playing, then try Save again.");
+      return;
+    }
+    const r = saveBtn.current?.getBoundingClientRect();
+    const entries: MenuEntry[] = [
+      { kind: "item", text: "Only download what you have the right to", enabled: false, action: () => {} },
+      { kind: "separator" },
+      ...mediaItems.map((m) => {
+        let host = "";
+        try {
+          host = new URL(m.url).host;
+        } catch {
+          // A relative or unusual address; the name is enough.
+        }
+        const label = m.kind === "hls" ? "Stream" : m.kind === "dash" ? "DASH (not supported)" : "Video";
+        return {
+          kind: "item" as const,
+          text: `${label} · ${titleOf(m.name)}${host ? ` (${host})` : ""}`,
+          enabled: m.kind !== "dash",
+          action: () => {
+            media
+              .download(m)
+              .catch((e) => setNotice(`Couldn't start the download: ${String(e)}`));
+          },
+        };
+      }),
+    ];
     await popupMenu(entries, r ? { x: r.left, y: r.bottom + 4 } : undefined);
   };
 
@@ -215,6 +289,53 @@ export function Player({ site, sites, blocked, bump, covered, onClose, onSwitch,
 
         <span className="grow" />
 
+        {refused && (
+          <span className="held" role="status">
+            Blocked <b>{refused}</b>, not a video file
+          </span>
+        )}
+        {notice && (
+          <span className="held" role="status">
+            {notice}
+            <button
+              className="icon-btn"
+              style={{ width: 24, height: 24 }}
+              onClick={() => setNotice(null)}
+              aria-label="Dismiss"
+            >
+              <X size={13} />
+            </button>
+          </span>
+        )}
+        {latest && (
+          <span className={`held dl ${latest.state}`} role="status">
+            {latest.state === "saving" ? (
+              <span className="spinner" aria-hidden />
+            ) : latest.state === "done" ? (
+              <Check size={14} className="dl-ok" aria-hidden />
+            ) : (
+              <CircleAlert size={14} className="dl-fail" aria-hidden />
+            )}
+            {latest.state === "saving" ? "Saving" : latest.state === "done" ? "Saved" : "Stopped"}{" "}
+            <b>{titleOf(latest.name)}</b>
+            {latest.state === "saving" && latest.written > 0 && <span>{formatBytes(latest.written)}</span>}
+            {latest.state === "done" && (
+              <button className="link" onClick={() => onOpenDownload(latest.path)}>
+                Watch
+              </button>
+            )}
+            {latest.state !== "saving" && (
+              <button
+                className="icon-btn"
+                style={{ width: 24, height: 24 }}
+                onClick={() => setHiddenDownload(latest.path)}
+                aria-label="Dismiss"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </span>
+        )}
         {held && (
           <span className="held" role="status">
             Held a new window to <b>{held.host}</b>
@@ -233,6 +354,16 @@ export function Player({ site, sites, blocked, bump, covered, onClose, onSwitch,
           </span>
         )}
 
+        <button
+          ref={saveBtn}
+          className="pill-btn"
+          onClick={saveVideo}
+          title="Save the video you're watching for offline viewing"
+        >
+          <SaveIcon size={14} aria-hidden />
+          <span className="bar-label">Save</span>
+          {mediaItems.length > 0 && <span className="count">{mediaItems.length}</span>}
+        </button>
         <button className="skip-btn" onClick={() => player.command("skip")} title="Skip the ad that's playing now">
           <FastForward size={13} fill="currentColor" strokeWidth={0} aria-hidden /> Skip ad
         </button>

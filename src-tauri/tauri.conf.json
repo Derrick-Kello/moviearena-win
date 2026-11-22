@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Movie Arena",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "identifier": "win.moviearena.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -12,12 +12,23 @@
   "app": {
     "windows": [],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; img-src 'self' data:; media-src 'self' asset: http://asset.localhost blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src ipc: http://ipc.localhost http://asset.localhost asset:; worker-src 'self' blob:",
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$VIDEO/Movie Arena/**",
+          "$DOWNLOAD/Movie Arena/**"
+        ]
+      }
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi", "app"],
+    "targets": [
+      "nsis",
+      "msi",
+      "app"
+    ],
     "publisher": "Movie Arena",
     "category": "Entertainment",
     "shortDescription": "Streaming portal launcher with a built-in ad shield",
@@ -29,15 +40,36 @@
       "icons/icon.ico"
     ],
     "windows": {
-      "webviewInstallMode": { "type": "embedBootstrapper" },
-      "nsis": { "installMode": "currentUser" }
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser"
+      }
     },
     "macOS": {
       "signingIdentity": "-",
       "minimumSystemVersion": "11.0"
     },
     "linux": {
-      "deb": { "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"] }
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0"
+        ]
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwMTg3QkQ1NkU5OUE1NDUKUldSRnBabHUxWHNZa0tobEZCamE0RzdKaW82TUNCQWZ4cEx1WTBpRlNaSXF0VStGZnk3aTRzV3QK",
+      "endpoints": [
+        "https://github.com/Derrick-Kello/moviearena-win/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

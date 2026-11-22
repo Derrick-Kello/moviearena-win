@@ -3,7 +3,9 @@
   "identifier": "ui",
   "description": "Permissions for the local Movie Arena interface. The player webview loads remote sites and is deliberately left out.",
   "windows": [],
-  "webviews": ["ui"],
+  "webviews": [
+    "ui"
+  ],
   "permissions": [
     "core:default",
     "core:menu:default",
@@ -13,7 +15,16 @@
     "core:window:allow-toggle-maximize",
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "https://*" }, { "url": "http://*" }]
-    }
+      "allow": [
+        {
+          "url": "https://*"
+        },
+        {
+          "url": "http://*"
+        }
+      ]
+    },
+    "updater:default",
+    "process:allow-restart"
   ]
 }

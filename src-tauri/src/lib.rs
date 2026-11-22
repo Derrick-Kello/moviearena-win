@@ -6,6 +6,8 @@
 //!   the UI under its toolbar. Remote content gets no IPC access; the shield
 //!   talks to it only through injected scripts and `eval_with_callback`.
 
+mod download;
+mod library;
 mod shield;
 #[cfg(windows)]
 mod webview2;
@@ -18,7 +20,8 @@ use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tauri::webview::{NewWindowResponse, PageLoadEvent};
+use tauri::webview::{DownloadEvent, NewWindowResponse, PageLoadEvent};
+use tauri_plugin_opener::OpenerExt;
 use tauri::{
     AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, State, Webview, WebviewBuilder,
     WebviewUrl, WindowBuilder,
@@ -179,6 +182,7 @@ fn build_player(app: &AppHandle, url: url::Url, bounds: Bounds) -> Result<Webvie
     let popup_app = app.clone();
     let load_app = app.clone();
     let title_app = app.clone();
+    let dl_app = app.clone();
 
     let mut builder = WebviewBuilder::new(PLAYER, WebviewUrl::External(url.clone()))
         .initialization_script_for_all_frames(shield::frame_script(settings, &state.token))
@@ -238,6 +242,44 @@ fn build_player(app: &AppHandle, url: url::Url, bounds: Bounds) -> Result<Webvie
         })
         .on_document_title_changed(move |_wv, title| {
             let _ = title_app.emit_to(UI, "player:title", serde_json::json!({ "title": title }));
+        })
+        .on_download(move |_wv, event| match event {
+            DownloadEvent::Requested { url, destination } => {
+                let suggested = destination
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .filter(|n| !n.is_empty())
+                    .or_else(|| url.path_segments().and_then(|mut s| s.next_back()).map(str::to_owned))
+                    .unwrap_or_default();
+                let name = library::safe_name(&suggested);
+                if !library::download_allowed(&name) {
+                    let _ = dl_app.emit_to(
+                        UI,
+                        "player:blocked",
+                        BlockedPayload { kind: "download", url: name, host: host_of(&url) },
+                    );
+                    return false;
+                }
+                let Ok(dir) = library::dir(&dl_app) else { return false };
+                let path = library::unique(&dir, &name);
+                *destination = path.clone();
+                let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or(name);
+                let _ = dl_app.emit_to(
+                    UI,
+                    "download:started",
+                    serde_json::json!({ "url": url.as_str(), "name": name, "path": path, "kind": "file" }),
+                );
+                true
+            }
+            DownloadEvent::Finished { url, path, success } => {
+                let _ = dl_app.emit_to(
+                    UI,
+                    "download:finished",
+                    serde_json::json!({ "url": url.as_str(), "path": path, "success": success }),
+                );
+                true
+            }
+            _ => true,
         });
 
     if let Some(ua) = PLAYER_USER_AGENT {
@@ -440,10 +482,137 @@ fn spawn_stats_pump(app: AppHandle) {
 // App entry
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Offline library
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+fn library_list(app: AppHandle) -> Result<serde_json::Value, String> {
+    let dir = library::dir(&app)?;
+    Ok(serde_json::json!({ "dir": dir, "items": library::list(&dir) }))
+}
+
+#[tauri::command]
+fn library_delete(app: AppHandle, path: String) -> Result<(), String> {
+    let file = library::inside(&library::dir(&app)?, &path)?;
+    library::remove(&file)
+}
+
+/// `reveal`: select the file in Explorer/Finder. `play`: open it in the
+/// system video player. `folder`: open the library folder.
+#[tauri::command]
+fn library_open(app: AppHandle, path: Option<String>, how: String) -> Result<(), String> {
+    let dir = library::dir(&app)?;
+    let opener = app.opener();
+    match (how.as_str(), path) {
+        ("folder", _) => opener.open_path(dir.to_string_lossy(), None::<&str>),
+        ("reveal", Some(p)) => opener.reveal_item_in_dir(library::inside(&dir, &p)?),
+        ("play", Some(p)) => {
+            let file = library::inside(&dir, &p)?;
+            if file.is_dir() {
+                return Err("That is an offline stream. Play it inside Movie Arena.".into());
+            }
+            opener.open_path(file.to_string_lossy(), None::<&str>)
+        }
+        _ => return Err("Unknown library action".into()),
+    }
+    .map_err(|e| e.to_string())
+}
+
+/// Bytes written so far for a download the player started.
+#[tauri::command]
+fn library_written(app: AppHandle, path: String) -> Result<u64, String> {
+    let dir = library::dir(&app)?;
+    let p = PathBuf::from(&path);
+    if !p.starts_with(&dir) {
+        return Err("Not a library path".into());
+    }
+    Ok(library::written(&p))
+}
+
+/// Save a video the player discovered. Direct files stream straight to disk;
+/// HLS playlists are expanded into a folder of segments for offline playback.
+#[tauri::command]
+fn media_download(
+    app: AppHandle,
+    url: String,
+    name: String,
+    referer: Option<String>,
+    cookie: Option<String>,
+) -> Result<(), String> {
+    let request = download::Request { url, name, referer, cookie };
+    let plan = download::plan(&app, request)?;
+    let kind = match plan.kind {
+        download::Kind::File => "file",
+        download::Kind::Hls => "hls",
+    };
+    let _ = app.emit_to(
+        UI,
+        "download:started",
+        serde_json::json!({
+            "url": plan.url.as_str(),
+            "name": plan.name,
+            "path": plan.path.to_string_lossy(),
+            "kind": kind,
+        }),
+    );
+    tauri::async_runtime::spawn(async move {
+        download::run(app, plan).await;
+    });
+    Ok(())
+}
+
+/// Watch the player for media the page loads and tell the UI about it. The
+/// toolbar turns this list into a native "Save video" menu.
+fn spawn_media_pump(app: AppHandle) {
+    std::thread::spawn(move || {
+        let last = Arc::new(Mutex::new(String::new()));
+        loop {
+            std::thread::sleep(Duration::from_millis(1500));
+            let Some(webview) = player(&app) else { continue };
+            let token = app.state::<AppState>().token.clone();
+            let app_for_cb = app.clone();
+            let last_for_cb = last.clone();
+            let _ = webview.eval_with_callback(shield::media_expression(&token), move |json| {
+                if json.is_empty() || json == "null" {
+                    return;
+                }
+                let Ok(value) = serde_json::from_str::<serde_json::Value>(&json) else { return };
+                let page = value.get("page").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+                let title = value.get("title").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+                let raw = value.get("items").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+                let items: Vec<serde_json::Value> = raw
+                    .into_iter()
+                    .filter_map(|item| {
+                        let url = item.get("url").and_then(|v| v.as_str())?;
+                        let kind = download::media_kind(url)?;
+                        Some(serde_json::json!({
+                            "url": url,
+                            "kind": kind,
+                            "name": download::suggest_name(url, &title, kind),
+                            "referer": item.get("referer").and_then(|v| v.as_str()).unwrap_or(page.as_str()),
+                            "cookie": item.get("cookie").and_then(|v| v.as_str()).unwrap_or_default(),
+                        }))
+                    })
+                    .collect();
+                let payload = serde_json::json!({ "page": page, "title": title, "items": items });
+                let key = payload.to_string();
+                let mut seen = last_for_cb.lock().unwrap();
+                if *seen != key {
+                    *seen = key;
+                    let _ = app_for_cb.emit_to(UI, "player:media", payload);
+                }
+            });
+        }
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
@@ -484,6 +653,7 @@ pub fn run() {
             )?;
 
             spawn_stats_pump(app.handle().clone());
+            spawn_media_pump(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -499,6 +669,11 @@ pub fn run() {
             shield_state,
             shield_update,
             shield_reset_stats,
+            library_list,
+            library_delete,
+            library_open,
+            library_written,
+            media_download,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Movie Arena");

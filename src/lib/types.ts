@@ -5,7 +5,7 @@ export type Category =
   | "animeAndSpecial";
 
 /** Tabs in the top bar. "all" is home, "custom" is the user's own links. */
-export type Tab = "all" | Category | "custom";
+export type Tab = "all" | Category | "custom" | "downloads";
 
 export type Feature = "ultraHD" | "autoNext" | "multiHost" | "fastServer" | "cleanUI";
 
@@ -32,6 +32,7 @@ export const TAB_LABELS: Record<Tab, string> = {
   dedicated: "Dedicated",
   animeAndSpecial: "Anime & More",
   custom: "My Links",
+  downloads: "Downloads",
 };
 
 export const CATEGORY_TITLES: Record<Category, string> = {
@@ -58,7 +59,7 @@ export const FEATURE_LABELS: Record<Feature, string> = {
 
 export const ALL_FEATURES: Feature[] = ["ultraHD", "autoNext", "multiHost", "fastServer", "cleanUI"];
 export const ALL_CATEGORIES: Category[] = ["aggregators", "multiServer", "dedicated", "animeAndSpecial"];
-export const TABS: Tab[] = ["all", "aggregators", "multiServer", "dedicated", "animeAndSpecial", "custom"];
+export const TABS: Tab[] = ["all", "aggregators", "multiServer", "dedicated", "animeAndSpecial", "custom", "downloads"];
 
 export interface ShieldSettings {
   autoSkip: boolean;

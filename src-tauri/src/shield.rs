@@ -126,6 +126,11 @@ pub fn skip_statement(token: &str) -> String {
     format!("(function(){{try{{window['{token}'].skip();}}catch(e){{}}}})()")
 }
 
+/// Expression evaluated in the top frame to list media the page has loaded.
+pub fn media_expression(token: &str) -> String {
+    format!("(function(){{try{{return window['{token}'].media();}}catch(e){{return null;}}}})()")
+}
+
 const FRAME_SCRIPT: &str = r#"
 (function () {
   'use strict';
@@ -150,11 +155,75 @@ const FRAME_SCRIPT: &str = r#"
     }
   }
 
+  // ---- Media scout ---------------------------------------------------------
+  // Passive: watch the URLs this frame loads so the toolbar can offer to save
+  // the video that is playing. Child frames forward to the top frame.
+  var media = [];
+  var mediaSeen = Object.create(null);
+  var perfSeen = 0;
+  var MEDIA_EXT = /\.(m3u8|mpd|mp4|m4v|mkv|webm|mov|avi|ogv)(?:[?#]|$)/i;
+
+  function cookieOf() {
+    try { return document.cookie || ''; } catch (e) { return ''; }
+  }
+
+  function mediaKind(url) {
+    var clean = String(url).split(/[?#]/)[0].toLowerCase();
+    if (/\.m3u8$/.test(clean)) return 'hls';
+    if (/\.mpd$/.test(clean)) return 'dash';
+    if (/\.(mp4|m4v|mkv|webm|mov|avi|ogv)$/.test(clean)) return 'file';
+    return '';
+  }
+
+  // MSE and DASH players fetch video as many small .mp4 chunks. Offering those
+  // as "the video" would save an unplayable fragment.
+  function looksLikeSegment(url) {
+    var file = String(url).split(/[?#]/)[0].split('/').pop() || '';
+    return /^(init|seg|segment|chunk|frag|part)[-_.0-9]/i.test(file);
+  }
+
+  function addMedia(url, referer, cookie) {
+    if (!url || typeof url !== 'string') return;
+    if (!/^https?:/i.test(url)) return;
+    if (!MEDIA_EXT.test(url)) return;
+    var kind = mediaKind(url);
+    if (!kind || (kind === 'file' && looksLikeSegment(url))) return;
+    if (mediaSeen[url]) return;
+    mediaSeen[url] = true;
+    media.push({ url: url, referer: referer || location.href, cookie: cookie || cookieOf() });
+    if (media.length > 40) {
+      var dropped = media.shift();
+      delete mediaSeen[dropped.url];
+    }
+    if (!isTop) {
+      try {
+        var m = {};
+        m[T + '_media'] = { url: url, referer: location.href, cookie: cookieOf() };
+        window.top.postMessage(m, '*');
+      } catch (e) {}
+    }
+  }
+
+  function scanMedia() {
+    try {
+      var entries = performance.getEntriesByType('resource');
+      for (; perfSeen < entries.length; perfSeen++) addMedia(entries[perfSeen].name);
+    } catch (e) {}
+    try {
+      var nodes = document.querySelectorAll('video, audio, source');
+      for (var i = 0; i < nodes.length; i++) addMedia(nodes[i].currentSrc || nodes[i].src);
+    } catch (e) {}
+  }
+
   window.addEventListener('message', function (e) {
     var d = e.data;
     if (!d || typeof d !== 'object') return;
     if (isTop && typeof d[T] === 'string' && Object.prototype.hasOwnProperty.call(counts, d[T])) {
       counts[d[T]]++;
+    }
+    if (isTop && d[T + '_media'] && typeof d[T + '_media'] === 'object') {
+      var found = d[T + '_media'];
+      addMedia(found.url, found.referer, found.cookie);
     }
     if (d[T + '_cmd'] === 'skip') { manualSkip(); relaySkip(); }
   }, true);
@@ -168,7 +237,10 @@ const FRAME_SCRIPT: &str = r#"
             counts.popups = counts.skipped = counts.overlays = 0;
             return c;
           },
-          skip: function () { manualSkip(); relaySkip(); }
+          skip: function () { manualSkip(); relaySkip(); },
+          media: function () {
+            return { page: location.href, title: document.title, items: media.slice() };
+          }
         }
       });
     } catch (e) {}
@@ -295,6 +367,27 @@ const FRAME_SCRIPT: &str = r#"
     setInterval(tick, 500);
     document.addEventListener('DOMContentLoaded', tick);
   }
+
+  // ---- Media scout wiring --------------------------------------------------
+  try {
+    var originalFetch = window.fetch;
+    if (originalFetch) {
+      window.fetch = function (input) {
+        try { addMedia(typeof input === 'string' ? input : (input && input.url)); } catch (e) {}
+        return originalFetch.apply(this, arguments);
+      };
+    }
+  } catch (e) {}
+  try {
+    var originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (method, url) {
+      try { addMedia(String(url)); } catch (e) {}
+      return originalOpen.apply(this, arguments);
+    };
+  } catch (e) {}
+  setInterval(scanMedia, 2000);
+  scanMedia();
+  document.addEventListener('DOMContentLoaded', scanMedia);
 })();
 "#;
 
